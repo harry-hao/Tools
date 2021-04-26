@@ -174,6 +174,39 @@ class ServiceStreaming : public Service {
   std::string account_;
 };
 
+class ServiceChat : public Service {
+ public:
+  enum {
+    kServiceType = 4,
+
+    kPrivilegeUser = 1,
+    kPrivilegeApp = 2,
+  };
+
+ public:
+  ServiceChat(const std::string &user_id = "")
+      : Service(kServiceType), user_id_(user_id) {}
+
+  virtual std::string PackService() override { return Pack(this); }
+
+  virtual void UnpackService(Unpacker *unpacker) override { *unpacker >> this; }
+
+  friend agora::tools::Packer &operator<<(agora::tools::Packer &p,
+                                          const ServiceChat *x) {
+    p << dynamic_cast<const Service *>(x) << x->user_id_;
+    return p;
+  }
+
+  friend agora::tools::Unpacker &operator>>(agora::tools::Unpacker &p,
+                                            ServiceChat *x) {
+    p >> dynamic_cast<Service *>(x) >> x->user_id_;
+    return p;
+  }
+
+ public:
+  std::string user_id_;
+};
+
 template <class T>
 struct ServiceCreator {
   static Service *New() { return (new T()); }
@@ -182,6 +215,7 @@ static const std::map<uint16_t, Service *(*)()> kServiceCreator = {
     {ServiceRtc::kServiceType, ServiceCreator<ServiceRtc>::New},
     {ServiceRtm::kServiceType, ServiceCreator<ServiceRtm>::New},
     {ServiceStreaming::kServiceType, ServiceCreator<ServiceStreaming>::New},
+    {ServiceChat::kServiceType, ServiceCreator<ServiceChat>::New},
 };
 
 class AccessToken2 {
